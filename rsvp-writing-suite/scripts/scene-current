@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# scene-current — extract the scene containing line $LINE from a Fountain file
+#
+# Usage:
+#   scene-current FILE [LINE]
+#
+# If LINE is not given, reads $RSVP_LINE from environment (set by Vim via
+# let $RSVP_LINE = line('.')).
+#
+# Output: the full text of the scene block containing the given line.
+# Pipe to rsvp-entropy, rsvp-flow, or rsvp-rewrite for local analysis.
+#
+# Example Vim usage:
+#   :let $RSVP_LINE = line('.')
+#   :r !scene-current % | rsvp-entropy --fmt terminal
+
+set -euo pipefail
+
+FILE="${1:-}"
+LINE="${2:-${RSVP_LINE:-1}}"
+
+if [[ -z "$FILE" ]]; then
+  echo "Usage: scene-current FILE [LINE]" >&2
+  exit 1
+fi
+
+python3 - "$FILE" "$LINE" << 'PYEOF'
+import sys
+import re
+
+file_path = sys.argv[1]
+target_line = int(sys.argv[2])
+
+SCENE_RE = re.compile(r'^(INT|EXT|INT\./EXT|I/E)[\. ]', re.IGNORECASE)
+
+with open(file_path) as fh:
+    lines = fh.readlines()
+
+# Find scene boundaries
+scene_starts = [i for i, l in enumerate(lines) if SCENE_RE.match(l)]
+scene_starts.append(len(lines))  # sentinel
+
+# 1-indexed target
+tgt = target_line - 1
+
+scene_idx = 0
+for i, start in enumerate(scene_starts[:-1]):
+    if start <= tgt < scene_starts[i + 1]:
+        scene_idx = i
+        break
+
+start = scene_starts[scene_idx]
+end   = scene_starts[scene_idx + 1] if scene_idx + 1 < len(scene_starts) else len(lines)
+print("".join(lines[start:end]), end="")
+PYEOF

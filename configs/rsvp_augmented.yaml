@@ -1,0 +1,8 @@
+base_config: configs/text_bridge.yaml
+
+encoder:
+  embedding_dim: 256
+
+training:
+  curriculum_level: 3
+  epochs: 12

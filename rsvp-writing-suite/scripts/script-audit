@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# script-audit — run a full RSVP field audit on a Fountain screenplay
+#
+# Usage:
+#   script-audit FILE [--json]
+#
+# Runs rsvp-parse, rsvp-entropy, rsvp-flow, rsvp-beats, and rsvp-persona
+# in sequence and prints a consolidated report to stdout.
+# With --json, emits one JSON object per tool.
+
+set -euo pipefail
+
+FILE="${1:-}"
+JSON_MODE=0
+
+if [[ -z "$FILE" ]]; then
+  echo "Usage: script-audit FILE [--json]" >&2
+  exit 1
+fi
+
+shift
+for arg in "$@"; do
+  if [[ "$arg" == "--json" ]]; then
+    JSON_MODE=1
+  fi
+done
+
+# Locate the suite root relative to this script
+SUITE_ROOT="$(dirname "$(dirname "$(readlink -f "$0")")")"
+BIN="$SUITE_ROOT/bin"
+
+if [[ $JSON_MODE -eq 1 ]]; then
+  echo "{"
+  echo "  \"source\": \"$FILE\","
+  echo "  \"entropy\":"
+  "$BIN/rsvp-entropy" --fmt json "$FILE" | sed 's/^/  /'
+  echo "  ,"
+  echo "  \"flow\":"
+  "$BIN/rsvp-flow" --fmt json "$FILE" | sed 's/^/  /'
+  echo "  ,"
+  echo "  \"beats\":"
+  "$BIN/rsvp-beats" --fmt json "$FILE" | sed 's/^/  /'
+  echo "  ,"
+  echo "  \"persona\":"
+  "$BIN/rsvp-persona" --fmt json "$FILE" | sed 's/^/  /'
+  echo "}"
+else
+  DIVIDER="════════════════════════════════════════════════════════════════════"
+
+  echo ""
+  echo "$DIVIDER"
+  echo "  RSVP FIELD AUDIT:  $FILE"
+  echo "$DIVIDER"
+  echo ""
+
+  echo "── PARSE ──────────────────────────────────────────────────────────"
+  "$BIN/rsvp-parse" --fmt text "$FILE" | head -40
+  echo "  [truncated; run rsvp-parse for full tree]"
+  echo ""
+
+  echo "── ENTROPY SCAN ───────────────────────────────────────────────────"
+  "$BIN/rsvp-entropy" --fmt terminal "$FILE"
+  echo ""
+
+  echo "── VECTOR FLOW ────────────────────────────────────────────────────"
+  "$BIN/rsvp-flow" --fmt terminal "$FILE"
+  echo ""
+
+  echo "── BEAT TOPOLOGY ──────────────────────────────────────────────────"
+  "$BIN/rsvp-beats" --fmt terminal "$FILE"
+  echo ""
+
+  echo "── CHARACTER FIELDS ───────────────────────────────────────────────"
+  "$BIN/rsvp-persona" --fmt terminal "$FILE"
+  echo ""
+
+  echo "$DIVIDER"
+  echo "  Audit complete. Run with --json for machine-readable output."
+  echo "$DIVIDER"
+fi

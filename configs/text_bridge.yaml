@@ -1,0 +1,15 @@
+base_config: configs/base.yaml
+mode: train_bridge
+modality: latex
+encoder:
+  name: text_stats
+  embedding_dim: 256
+model:
+  type: bridge_mlp
+  hidden_dim: 512
+training:
+  epochs: 20
+  batch_size: 16
+  learning_rate: 0.0003
+  curriculum_level: 2
+  device: cpu

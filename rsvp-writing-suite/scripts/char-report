@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# char-report — print the character field report for one named character
+#
+# Usage:
+#   char-report CHARACTER FILE
+#
+# Example:
+#   char-report MARIAN script.fountain
+
+set -euo pipefail
+
+CHAR="${1:-}"
+FILE="${2:-}"
+
+if [[ -z "$CHAR" || -z "$FILE" ]]; then
+  echo "Usage: char-report CHARACTER FILE" >&2
+  exit 1
+fi
+
+SUITE_ROOT="$(dirname "$(dirname "$(readlink -f "$0")")")"
+"$SUITE_ROOT/bin/rsvp-persona" --character "$CHAR" "$FILE"

@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "rsvp-writing-suite"
+version = "0.1.0"
+description = "A constraint-first authorship environment treating documents as RSVP field manifolds"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Flyxion" }
+]
+keywords = [
+  "writing", "screenplay", "rsvp", "field-theory", "entropy",
+  "fountain", "vim", "authorship", "spherepop"
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Topic :: Text Editors",
+  "Topic :: Text Processing :: Linguistic",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+]
+
+# Core library: no mandatory external dependencies.
+# All field computations use the Python standard library.
+# Optional: install sentence-transformers for production-quality embeddings.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+embeddings = ["sentence-transformers>=2.2"]
+
+[project.scripts]
+rsvp-parse   = "rsvp.parse_cmd:main"
+rsvp-entropy = "rsvp.entropy:main"
+rsvp-flow    = "rsvp.flow:main"
+rsvp-persona = "rsvp.persona:main"
+rsvp-beats   = "rsvp.beats:main"
+rsvp-rewrite = "rsvp.rewrite:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rsvp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.rsvp]
+# Default RSVP field thresholds.
+# Override in a per-project rsvp.toml or via CLI flags.
+entropy_threshold    = 4.0
+gradient_threshold   = 1.5
+stagnation_threshold = 0.15
+torsion_threshold    = 0.40
+similarity_threshold = 0.90
+coherence_threshold  = 3.5
+decay_lambda         = 0.10

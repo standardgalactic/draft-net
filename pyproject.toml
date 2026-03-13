@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "draft-net"
+version = "0.1.0"
+description = "Trajectory learning for stochastic revision and spectral refinement"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Flyxion"}]
+dependencies = [
+  "numpy>=1.26",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "torch>=2.2",
+  "gitpython>=3.1",
+]
+
+[project.scripts]
+draftnet-extract = "draftnet.cli.extract:main"
+draftnet-train = "draftnet.cli.train:main"
+draftnet-eval = "draftnet.cli.eval:main"
+draftnet-replay = "draftnet.cli.replay:main"
+draftnet-reverse = "draftnet.cli.reverse:main"
+
+[tool.setuptools.packages.find]
+include = ["draftnet*"]

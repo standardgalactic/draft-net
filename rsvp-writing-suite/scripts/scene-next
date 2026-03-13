@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# scene-next — print the line number of the next scene heading after LINE
+#
+# Usage:
+#   scene-next FILE [LINE]
+#
+# Outputs the 1-indexed line number. Useful for cursor positioning in Vim:
+#   :execute "normal! " . system('scene-next % ' . line('.')) . "G"
+
+set -euo pipefail
+
+FILE="${1:-}"
+LINE="${2:-${RSVP_LINE:-1}}"
+
+if [[ -z "$FILE" ]]; then
+  echo "Usage: scene-next FILE [LINE]" >&2
+  exit 1
+fi
+
+python3 - "$FILE" "$LINE" << 'PYEOF'
+import sys
+import re
+
+file_path = sys.argv[1]
+target_line = int(sys.argv[2])
+
+SCENE_RE = re.compile(r'^(INT|EXT|INT\./EXT|I/E)[\. ]', re.IGNORECASE)
+
+with open(file_path) as fh:
+    lines = fh.readlines()
+
+for i, line in enumerate(lines):
+    if i >= target_line and SCENE_RE.match(line):   # target_line is 1-indexed → i >= tgt
+        print(i + 1)
+        sys.exit(0)
+
+print(len(lines))  # return EOF if no next scene
+PYEOF

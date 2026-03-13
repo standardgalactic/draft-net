@@ -1,0 +1,17 @@
+seed: 42
+experiment_dir: experiments
+manifest_path: data/manifests/trajectories.jsonl
+max_states_per_trajectory: 128
+min_states_per_trajectory: 3
+encoder:
+  name: text_stats
+  embedding_dim: 256
+model:
+  hidden_dim: 512
+  dropout: 0.1
+training:
+  epochs: 10
+  batch_size: 16
+  learning_rate: 0.0005
+  curriculum_level: 1
+  device: cpu

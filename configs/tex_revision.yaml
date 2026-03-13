@@ -1,0 +1,11 @@
+base_config: configs/base.yaml
+mode: extract_git
+repo_path: .
+file_globs:
+  - "*.tex"
+output_dir: data/processed
+manifest_path: data/manifests/trajectories.jsonl
+normalization:
+  strip_comments: false
+  collapse_whitespace: false
+  flatten_includes: false

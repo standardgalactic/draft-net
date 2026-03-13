@@ -1,0 +1,208 @@
+.
+├── LICENSE
+├── README.md
+├── configs
+│   ├── base.yaml
+│   ├── painting_spectral.yaml
+│   ├── rsvp_augmented.yaml
+│   ├── tex_revision.yaml
+│   └── text_bridge.yaml
+├── data
+│   ├── interim
+│   ├── manifests
+│   ├── processed
+│   └── raw
+├── docs
+│   ├── draft_trajectory_learning.md
+│   ├── rsvp_integration.md
+│   └── spectral_refinement.md
+├── draft_net.pdf
+├── draft_net.tex
+├── draft_net_v2.pdf
+├── draft_net_v2.tex
+├── draftnet
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-313.pyc
+│   │   └── types.cpython-313.pyc
+│   ├── cli
+│   │   ├── __init__.py
+│   │   ├── common.py
+│   │   ├── eval.py
+│   │   ├── extract.py
+│   │   ├── replay.py
+│   │   ├── reverse.py
+│   │   └── train.py
+│   ├── data
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── image_loader.cpython-313.pyc
+│   │   │   ├── manifest.cpython-313.pyc
+│   │   │   ├── schema.cpython-313.pyc
+│   │   │   └── text_loader.cpython-313.pyc
+│   │   ├── collate.py
+│   │   ├── image_loader.py
+│   │   ├── manifest.py
+│   │   ├── schema.py
+│   │   └── text_loader.py
+│   ├── encoders
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── base.cpython-313.pyc
+│   │   │   ├── image_encoder.cpython-313.pyc
+│   │   │   ├── rsvp_features.cpython-313.pyc
+│   │   │   └── text_encoder.cpython-313.pyc
+│   │   ├── base.py
+│   │   ├── image_encoder.py
+│   │   ├── rsvp_features.py
+│   │   └── text_encoder.py
+│   ├── eval
+│   │   ├── __init__.py
+│   │   ├── edit_distance.py
+│   │   ├── fidelity.py
+│   │   ├── field_alignment.py
+│   │   └── reconstruction.py
+│   ├── extract
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── diffs.cpython-313.pyc
+│   │   │   ├── git.cpython-313.pyc
+│   │   │   ├── image_progress.cpython-313.pyc
+│   │   │   └── tex.cpython-313.pyc
+│   │   ├── diffs.py
+│   │   ├── git.py
+│   │   ├── image_progress.py
+│   │   └── tex.py
+│   ├── losses
+│   │   ├── __init__.py
+│   │   ├── bridge_loss.py
+│   │   ├── edit_path_loss.py
+│   │   ├── spectral_loss.py
+│   │   └── velocity_loss.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── bridge.cpython-313.pyc
+│   │   │   ├── planner.cpython-313.pyc
+│   │   │   ├── segmentation.cpython-313.pyc
+│   │   │   ├── spectral.cpython-313.pyc
+│   │   │   └── velocity.cpython-313.pyc
+│   │   ├── bridge.py
+│   │   ├── planner.py
+│   │   ├── segmentation.py
+│   │   ├── spectral.py
+│   │   └── velocity.py
+│   ├── trajectories
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── path_metrics.cpython-313.pyc
+│   │   │   └── subdivision.cpython-313.pyc
+│   │   ├── draft.py
+│   │   ├── path_metrics.py
+│   │   └── subdivision.py
+│   ├── types.py
+│   └── utils
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── __init__.cpython-313.pyc
+│       │   ├── hashing.cpython-313.pyc
+│       │   ├── image_ops.cpython-313.pyc
+│       │   └── io.cpython-313.pyc
+│       ├── hashing.py
+│       ├── image_ops.py
+│       ├── io.py
+│       └── metrics.py
+├── file-list.txt
+├── pyproject.toml
+├── rsvp-writing-suite
+│   ├── README.md
+│   ├── agents
+│   │   ├── coding_agent_guide.md
+│   │   └── screenplay_agent_guide.md
+│   ├── bin
+│   │   ├── rsvp-beats
+│   │   ├── rsvp-entropy
+│   │   ├── rsvp-flow
+│   │   ├── rsvp-parse
+│   │   ├── rsvp-persona
+│   │   └── rsvp-rewrite
+│   ├── examples
+│   │   ├── essay_example.md
+│   │   └── sample_screenplay.fountain
+│   ├── pyproject.toml
+│   ├── rsvp
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── beats.cpython-312.pyc
+│   │   │   ├── document.cpython-312.pyc
+│   │   │   ├── entropy.cpython-312.pyc
+│   │   │   ├── flow.cpython-312.pyc
+│   │   │   ├── metrics.cpython-312.pyc
+│   │   │   ├── parse_cmd.cpython-312.pyc
+│   │   │   ├── parser.cpython-312.pyc
+│   │   │   ├── persona.cpython-312.pyc
+│   │   │   └── rewrite.cpython-312.pyc
+│   │   ├── beats.py
+│   │   ├── document.py
+│   │   ├── entropy.py
+│   │   ├── flow.py
+│   │   ├── metrics.py
+│   │   ├── parse_cmd.py
+│   │   ├── parser.py
+│   │   ├── persona.py
+│   │   └── rewrite.py
+│   ├── scripts
+│   │   ├── char-report
+│   │   ├── scene-current
+│   │   ├── scene-next
+│   │   └── script-audit
+│   ├── spherepop
+│   │   ├── events.md
+│   │   └── spherepop_operations.md
+│   ├── tests
+│   │   ├── __pycache__
+│   │   │   └── test_suite.cpython-312.pyc
+│   │   └── test_suite.py
+│   ├── theory
+│   │   ├── lamphron_lamphrodyne.md
+│   │   ├── narrative_field_model.md
+│   │   ├── rsvp_foundations.md
+│   │   └── scalar_vector_entropy.md
+│   ├── vim
+│   │   ├── ftplugin
+│   │   │   ├── fountain.vim
+│   │   │   └── markdown.vim
+│   │   └── plugin
+│   │       └── rsvp.vim
+│   └── {bin,rsvp,vim
+│       └── {plugin,ftplugin},scripts,examples,tests,theory,spherepop,agents}
+├── scripts
+│   ├── evaluate_paths.py
+│   ├── extract_git_history.py
+│   ├── extract_painting_progress.py
+│   ├── replay_trajectory.py
+│   ├── reverse_plan.py
+│   ├── train_bridge.py
+│   └── train_spectral.py
+└── tests
+    ├── __pycache__
+    │   ├── test_bridge_model.cpython-313-pytest-9.0.2.pyc
+    │   ├── test_diff_ops.cpython-313-pytest-9.0.2.pyc
+    │   ├── test_image_loader.cpython-313-pytest-9.0.2.pyc
+    │   ├── test_image_ops.cpython-313-pytest-9.0.2.pyc
+    │   ├── test_path_metrics.cpython-313-pytest-9.0.2.pyc
+    │   └── test_tex_parser.cpython-313-pytest-9.0.2.pyc
+    ├── test_bridge_model.py
+    ├── test_diff_ops.py
+    ├── test_image_loader.py
+    ├── test_image_ops.py
+    ├── test_path_metrics.py
+    └── test_tex_parser.py
+
+44 directories, 162 files

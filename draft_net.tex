@@ -1,0 +1,826 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,positioning,decorations.pathreplacing,shapes.geometric}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{parskip}
+
+
+\geometry{
+  top=1.25in,
+  bottom=1.25in,
+  left=1.35in,
+  right=1.35in
+}
+
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}[Scale=0.88]
+
+\definecolor{draftblue}{HTML}{1a3a5c}
+\definecolor{draftgray}{HTML}{4a4a4a}
+\definecolor{draftrule}{HTML}{8aadca}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=draftblue,
+  citecolor=draftblue,
+  urlcolor=draftblue,
+  pdftitle={Draft-Net: Trajectory Learning for Stochastic Revision and Spectral Refinement},
+  pdfauthor={Flyxion}
+}
+
+\titleformat{\section}{\large\bfseries\color{draftblue}}{\thesection.}{0.6em}{}[\vspace{0.1em}\color{draftrule}\hrule\vspace{0.2em}]
+\titleformat{\subsection}{\normalsize\bfseries\color{draftgray}}{\thesubsection.}{0.5em}{}
+\titleformat{\subsubsection}{\normalsize\itshape\color{draftgray}}{\thesubsubsection.}{0.4em}{}
+
+\newtheoremstyle{draftthm}
+  {0.7em}{0.5em}{\itshape}{}{\bfseries\color{draftblue}}{.}{0.5em}{}
+\theoremstyle{draftthm}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{remark}{Remark}[section]
+
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Lat}{\mathbb{R}^{m}}
+\newcommand{\traj}{\gamma}
+\newcommand{\enc}{E}
+\newcommand{\vtheta}{v_{\theta}}
+\newcommand{\Ftheta}{F_{\theta}}
+\newcommand{\Gtheta}{G_{\theta}}
+\newcommand{\stheta}{\sigma_{\theta}}
+\newcommand{\norm}[1]{\left\|#1\right\|}
+\newcommand{\ptheta}{p_{\theta}}
+\newcommand{\dz}{\Delta z}
+\newcommand{\bW}{W}
+
+\begin{document}
+
+% ---------------------------------------------------------------
+% TITLE PAGE
+% ---------------------------------------------------------------
+\begin{titlepage}
+\centering
+\vspace*{1.8cm}
+
+{\color{draftblue}\rule{\linewidth}{1.4pt}}\\[0.4em]
+{\color{draftblue}\rule{\linewidth}{0.4pt}}
+
+\vspace{1.0cm}
+{\fontsize{22}{28}\selectfont\bfseries\color{draftblue}
+Draft-Net: Trajectory Learning for\\[0.25em]
+Stochastic Revision and Spectral Refinement}
+
+\vspace{0.9cm}
+{\color{draftblue}\rule{0.5\linewidth}{0.4pt}}
+
+\vspace{0.8cm}
+{\large Flyxion}
+
+\vspace{0.4cm}
+{\normalsize\color{draftgray}\itshape Independent Scholar}
+
+\vspace{0.6cm}
+{\small\color{draftgray} \today}
+
+\vspace{1.2cm}
+{\color{draftblue}\rule{\linewidth}{0.4pt}}\\[0.2em]
+{\color{draftblue}\rule{\linewidth}{1.4pt}}
+
+\vspace{1.4cm}
+\begin{minipage}{0.88\textwidth}
+\small\itshape\color{draftgray}
+\textbf{Abstract.}\quad
+Traditional generative models focus on the probability of a final artifact, effectively collapsing the complex history of human creation into a singular distributional event. Draft-Net proposes a shift toward learning the trajectory $\traj(t)$, treating documents and images as paths through a high-dimensional latent manifold rather than as static samples. By training on version-controlled empirical data---Git commit histories, manuscript revision sequences, and layered painting progress shots---Draft-Net learns the vector fields of authorial intent. The framework departs from autoregressive models in two fundamental respects: it conditions generation on both initial and terminal states, formulating intermediate reconstruction as a stochastic bridge problem; and it employs an iterative dyadic resolution curriculum that progressively increases the temporal granularity of the learned trajectory. The architecture extends naturally to the visual domain through spectral decomposition, in which low-frequency compositional structures are established before high-frequency edges and highlights emerge. Integration with the Relativistic Scalar-Vector Plenum framework augments each draft state with scalar density, directional flow, and informational entropy diagnostics. Path-fidelity metrics replace perplexity as the primary evaluation criterion, selecting models by how faithfully their predicted trajectories reconstruct real authorial revision histories. Together these contributions outline a shift from static generative modeling toward a generative theory of work: a framework that learns not what finished artifacts look like, but the temporal logic through which they come to be.
+\end{minipage}
+
+\vspace{1.0cm}
+{\small\color{draftgray}
+\textit{Keywords}: trajectory learning, stochastic revision, Schrödinger bridge, spectral refinement,
+RSVP field theory, version-controlled corpora, path fidelity, latent manifolds}
+\end{titlepage}
+
+% ---------------------------------------------------------------
+\setstretch{1.18}
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------
+\section{Introduction: From Static Likelihood to Dynamic Evolution}
+% ---------------------------------------------------------------
+
+\subsection{The Limits of Endpoint Modeling}
+
+Modern generative models---large language models, diffusion architectures, and related systems---are primarily trained to approximate the probability of a final artifact. In language modeling this objective takes the canonical form of next-token prediction, where a model learns the conditional probability of the next symbol given its preceding context:
+
+\begin{equation}
+  P_{\theta}(w_i \mid w_{<i}).
+\end{equation}
+
+Image generators learn a mapping from a noise distribution to a final image distribution, treating the generation event as a single stochastic draw. In both cases the training objective orients entirely toward reproducing a static endpoint. The trajectory through which an artifact emerges---its drafts, revisions, structural reorganizations, and iterative refinements---is discarded as training signal. The loss function rewards correct terminal states while remaining silent about the order, logic, and dynamics of their construction.
+
+This compression is computationally tractable and empirically powerful. Nevertheless it constitutes a systematic loss of information. The intermediate states of a creative process contain evidence of intention, uncertainty, self-correction, and structural reasoning that is invisible in the final product alone. A model trained exclusively on endpoints cannot, in principle, have learned what creation is---only what creation produces.
+
+\subsection{The Trajectory Hypothesis}
+
+Human creative practice is inherently temporal. Authors write rough drafts, reorganize arguments, compress redundant passages, and refine style across multiple iterations. Painters begin with broad compositional blocking before introducing form, shadow, and highlight in a structured sequence that mirrors the hierarchy of visual perception. Programmers refactor code over dozens of commits, each representing a local decision about structure, abstraction, or clarity. In each of these domains the final artifact is only the terminal point of a trajectory of transformations.
+
+This observation motivates the central hypothesis of the present work: intelligence in creative domains is better characterized as the ability to navigate transformation paths than as the ability to produce terminal states. Rather than learning the distribution $P(x)$ of completed artifacts, a capable model should learn the trajectory $\traj(t)$ through which artifacts evolve. The generative task should shift from predicting the next token or the final image toward predicting the next revision of an evolving work---from modeling static distributions to modeling dynamic processes.
+
+\subsection{From Token Prediction to Revision Prediction}
+
+The conceptual transition can be stated precisely as a change in the conditioning structure of the generative objective. Standard autoregressive models condition only on prior context:
+
+\begin{equation}
+  P_{\theta}(w_i \mid w_{<i}).
+\end{equation}
+
+Draft-Net instead conditions on both the current state and the terminal goal:
+
+\begin{equation}
+  P_{\theta}(d_{t+1} \mid d_t, d_T),
+\end{equation}
+
+where $d_t$ is the current draft and $d_T$ is the finished work. The model is therefore not predicting what word comes next in a distribution of arbitrary text, but what revision step comes next in the trajectory from a particular rough start to a particular finished artifact.
+
+This is not merely a change in what is predicted. It is a change in what is known. A model that has access to the endpoint during training sees every intermediate draft as a waypoint on a known path, not as a free extension of an open context. This fundamentally reorganizes the information structure of the learning problem.
+
+\subsection{Contributions of Draft-Net}
+
+The framework introduced in this paper makes the following contributions. It defines a formal representation of draft trajectories and their embedding into latent manifolds. It presents a stochastic bridge formulation for learning revision dynamics between fixed endpoints. It introduces a dyadic iterative resolution curriculum that progressively increases the temporal granularity of the learned trajectory. It extends the trajectory framework to the visual domain through Fourier spectral decomposition and scale-aware refinement hierarchies. It incorporates RSVP field diagnostics---scalar density, vector flow, and informational entropy---as augmented latent state variables. It proposes path-fidelity metrics as principled replacements for perplexity in trajectory evaluation. And it outlines an object-layered composition model that preserves background continuity while foreground figures resolve over time, formalizing the classical atelier method of layered painting.
+
+% ---------------------------------------------------------------
+\section{Formal Foundations of Draft Trajectories}
+% ---------------------------------------------------------------
+
+\subsection{The Manifold of Creative Artifacts}
+
+Let $\D$ denote the space of all possible creative artifacts relevant to a given domain. In the textual case $\D$ consists of all finite token sequences over a vocabulary $\mathcal{V}$. In the visual case $\D$ consists of all images on a fixed canvas. In the code domain $\D$ consists of all syntactically well-formed programs over a grammar. In each case the space is discrete at the level of individual symbols but admits meaningful continuous structure at the level of semantic content.
+
+\begin{definition}[Artifact Manifold]
+  Let $\D$ be a set of creative artifacts equipped with a dissimilarity measure $\mathrm{dist}: \D \times \D \to \mathbb{R}_{\geq 0}$. An \emph{artifact manifold} is a continuous manifold $\mathcal{M}$ together with an encoder $\enc: \D \to \mathcal{M}$ that embeds artifacts into a metric space with smooth interpolation properties.
+\end{definition}
+
+Throughout the paper we take $\mathcal{M} = \Lat$ for a fixed dimensionality $m$, and write $z = \enc(d)$ for the latent representation of a draft $d \in \D$.
+
+\subsection{Draft Sequences and Trajectories}
+
+\begin{definition}[Draft Sequence]
+  A \emph{draft sequence} is an ordered tuple
+  \begin{equation}
+    D = (d_0, d_1, \dots, d_T)
+  \end{equation}
+  where $d_0 \in \D$ is an initial rough artifact and $d_T \in \D$ is the finished work. Each $d_t$ is a creative state, and the sequence represents the empirical revision history of a single artifact.
+\end{definition}
+
+A draft sequence induces a trajectory in latent space via the encoder. Define
+
+\begin{equation}
+  z_t = \enc(d_t), \qquad z_t \in \Lat.
+\end{equation}
+
+The discrete latent sequence $(z_0, z_1, \dots, z_T)$ is a sampling of a continuous trajectory $\traj: [0,T] \to \Lat$, interpreted as the latent path traced by the artifact during revision.
+
+\subsection{The Revision Velocity Field}
+
+The local dynamics of revision are described by the \emph{edit velocity}:
+
+\begin{equation}
+  \dz_t = z_{t+1} - z_t.
+\end{equation}
+
+This discrete difference approximates the continuous derivative
+
+\begin{equation}
+  \frac{dz}{dt} = v(z, t),
+\end{equation}
+
+which is a vector field over the latent manifold. The training objective for Draft-Net can be stated as learning this vector field from empirical trajectory data: the model should predict not merely what final artifacts look like, but how latent states move under authorial revision.
+
+\begin{definition}[Transformation Operator]
+  The local \emph{transformation operator} at time $t$ is the map
+  \begin{equation}
+    \Delta_t: \D \to \D, \qquad d_{t+1} = \Delta_t(d_t),
+  \end{equation}
+  implemented in practice as a structured diff over the artifact. For text, $\Delta_t$ decomposes into insertions, deletions, and substitutions. For images, $\Delta_t$ is a pixel-level or region-level edit.
+\end{definition}
+
+% ---------------------------------------------------------------
+\section{Stochastic Revision and Bridge Processes}
+% ---------------------------------------------------------------
+
+\subsection{Human Revision as a Stochastic Process}
+
+Revision is guided but not deterministic. Even when an author knows the destination of their work, the local editing decisions along the way depend on reading, reflection, and contextual choices that vary across realizations of the same general trajectory. An author rewriting a paragraph does not follow a unique path from initial to final form; many paths are plausible, and the realized path represents one sample from a distribution over revision behaviors.
+
+This observation motivates modeling revision as a stochastic process rather than a deterministic vector field. The stochastic formulation preserves the direction of authorial intent---the drift toward the finished work---while allowing the model to represent the natural variability of local editing decisions.
+
+\subsection{Stochastic Differential Equation Formulation}
+
+\begin{definition}[Revision SDE]
+  The revision dynamics in latent space are modeled by the stochastic differential equation
+  \begin{equation}
+    dz_t = \vtheta(z_t, t)\, dt + \sigma(t)\, d\bW_t,
+    \label{eq:revision-sde}
+  \end{equation}
+  where $\vtheta(z_t, t)$ is a learned drift vector field representing directional revision intent, $\sigma(t) \geq 0$ is a time-dependent exploration noise coefficient, and $\bW_t$ is a standard Wiener process.
+\end{definition}
+
+The drift term $\vtheta$ encodes what the model learns about the direction of improvement: how latent states tend to move during revision given the current state and time. The noise term $\sigma(t)\, d\bW_t$ represents the stochastic component of local editing decisions. During early stages, when the artifact is rough and the space of plausible revisions is wide, $\sigma(t)$ may be large. As the artifact approaches completion, $\sigma(t)$ typically decreases, reflecting the convergence of revision decisions toward fine-grained local improvements.
+
+\subsection{Endpoint-Conditioned Revision Bridges}
+
+Unlike standard diffusion models, which condition generation only on an initial noise state, Draft-Net conditions revision on both the initial draft $d_0$ and the terminal artifact $d_T$. This transforms the learning problem into one of \emph{bridge estimation}: learning the distribution over plausible intermediate states connecting fixed endpoints.
+
+\begin{definition}[Revision Bridge]
+  The \emph{revision bridge} is the conditional distribution
+  \begin{equation}
+    \ptheta(z_t \mid z_0, z_T, t)
+  \end{equation}
+  over latent states at time $t$ given the latent representations of the initial and final drafts.
+\end{definition}
+
+This formulation is related to the Schrödinger bridge problem: finding the stochastic process with fixed marginal distributions at $t=0$ and $t=T$ that minimizes a relative entropy cost. In the present application the marginals are empirically given by the first and final drafts in a version-controlled corpus.
+
+The training objective for the bridge is to maximize the log-probability of observed intermediate drafts:
+
+\begin{equation}
+  \mathcal{L}_{\mathrm{bridge}}
+  =
+  - \sum_{\text{documents}}
+  \sum_{t=1}^{T-1}
+  \log \ptheta(z_t \mid z_0, z_T, t).
+  \label{eq:bridge-loss}
+\end{equation}
+
+In practice, when intermediate drafts are available but the latent distances serve as the reconstruction measure, a squared error version is more common:
+
+\begin{equation}
+  \mathcal{L}_{\mathrm{bridge}}
+  =
+  \sum_{t=1}^{T-1}
+  \norm{\hat{z}_t - z_t}^2,
+  \label{eq:bridge-l2}
+\end{equation}
+
+where $\hat{z}_t = f_{\theta}(z_0, z_T, t)$ is the model's predicted intermediate state.
+
+\subsection{Iterative Resolution Curriculum}
+
+The training procedure follows a dyadic curriculum that progressively increases the temporal resolution of the learned trajectory. This curriculum mirrors the structure of a refinement cascade: the model first learns global transformation structure, then progressively fills in local dynamics.
+
+\begin{definition}[Dyadic Resolution Curriculum]
+  At training stage $n$, the model is required to reconstruct latent states at fractional times
+  \begin{equation}
+    t_k^{(n)} = \frac{k}{2^n} T, \qquad k = 1, 2, \dots, 2^n - 1.
+  \end{equation}
+  The loss at stage $n$ is
+  \begin{equation}
+    \mathcal{L}^{(n)}
+    =
+    \sum_{k=1}^{2^n - 1}
+    \norm{\hat{z}_{t_k^{(n)}} - z_{t_k^{(n)}}}^2,
+    \label{eq:dyadic-loss}
+  \end{equation}
+  where target states are obtained from the real drafts nearest to each fractional time.
+\end{definition}
+
+Stage $n=0$ trains only the endpoint mapping. Stage $n=1$ adds midpoint prediction:
+
+\begin{equation}
+  \hat{z}_{T/2} = f_{\theta}(z_0, z_T).
+\end{equation}
+
+Stage $n=2$ adds quarter-points:
+
+\begin{equation}
+  \hat{z}_{T/4} = f_{\theta}(z_0, z_{T/2}), \qquad
+  \hat{z}_{3T/4} = f_{\theta}(z_{T/2}, z_T).
+\end{equation}
+
+Each successive stage doubles the temporal resolution. The effect is to force the network to learn both global revision structure---the coarse transformation from rough to polished---and local edit dynamics at progressively finer granularities.
+
+\subsection{Edit Velocity Supervision}
+
+Beyond state reconstruction, the model can be trained to predict the direction of revision at each step. Define the \emph{revision increment} as
+
+\begin{equation}
+  \dz_t = z_{t+1} - z_t.
+\end{equation}
+
+A velocity estimator $g_{\theta}$ is trained under the velocity loss
+
+\begin{equation}
+  \mathcal{L}_{\mathrm{vel}}
+  =
+  \sum_t
+  \norm{g_{\theta}(z_t, z_T, t) - \dz_t}^2.
+  \label{eq:velocity-loss}
+\end{equation}
+
+Velocity supervision is important because two trajectories may pass through similar latent regions while exhibiting different local editing behavior. One revision path may be compressive---removing redundancy and tightening argument---while another is expansive, adding qualification and context. The latent state alone does not distinguish these behaviors; the local velocity does.
+
+% ---------------------------------------------------------------
+\section{RSVP Integration: Field Diagnostics for Revision Dynamics}
+% ---------------------------------------------------------------
+
+\subsection{RSVP Framework Overview}
+
+The Relativistic Scalar-Vector Plenum (RSVP) framework characterizes evolving structured systems in terms of three coordinate fields: a scalar density measuring local informational concentration, a directional vector field capturing the flow of meaning or structure, and an entropy field measuring disorder. When applied to creative artifacts, these fields provide interpretable diagnostics of revision dynamics that augment the geometric latent representation.
+
+\subsection{Scalar Density of a Draft}
+
+\begin{definition}[Scalar Density]
+  Let $d$ be a text artifact tokenized over vocabulary $\mathcal{V}$, and let $P(w)$ denote the empirical frequency of token $w$ in a reference corpus. The \emph{scalar density} of patch $p_i \subseteq d$ is
+  \begin{equation}
+    \Phi_i
+    =
+    \frac{1}{|p_i|}
+    \sum_{w \in p_i} \bigl(-\log P(w)\bigr),
+    \label{eq:scalar-density}
+  \end{equation}
+  where $-\log P(w)$ is the information content of token $w$.
+\end{definition}
+
+High $\Phi$ corresponds to passages containing rare or conceptually loaded vocabulary---philosophical definitions, technical claims, dramatic revelations. Low $\Phi$ corresponds to connective prose, transitional material, or formulaic expression. Under revision, semantic density typically increases as vague language is replaced by precise formulations, and as redundant passages are compressed.
+
+\subsection{Directional Vector Flow}
+
+Let $E(p_i) \in \mathbb{R}^d$ be a sentence or paragraph embedding of patch $p_i$. The \emph{directional flow} between adjacent patches is
+
+\begin{equation}
+  \mathbf{v}_i = E(p_{i+1}) - E(p_i),
+  \label{eq:vector-flow}
+\end{equation}
+
+measuring the semantic displacement between successive regions. The flow magnitude
+
+\begin{equation}
+  |\mathbf{v}_i| = \norm{E(p_{i+1}) - E(p_i)}
+\end{equation}
+
+serves as a scalar proxy for narrative or argumentative motion. Large displacements correspond to conceptual jumps; small displacements correspond to thematic continuity.
+
+The curvature of the semantic trajectory provides an additional diagnostic:
+
+\begin{equation}
+  \kappa_i = \norm{\mathbf{v}_i - \mathbf{v}_{i-1}},
+\end{equation}
+
+with high curvature indicating sudden narrative turns, conceptual pivots, or scene transitions.
+
+\subsection{Informational Entropy}
+
+\begin{definition}[Patch Entropy]
+  The \emph{informational entropy} of patch $p_i$, measured over the token distribution $p(w)$ within the patch, is
+  \begin{equation}
+    S_i
+    =
+    - \sum_{w \in \mathcal{V}} p(w) \log p(w).
+    \label{eq:patch-entropy}
+  \end{equation}
+\end{definition}
+
+High entropy corresponds to heterogeneous vocabulary and fragmented conceptual structure; low entropy corresponds to strong thematic focus or tightly constrained terminology. A key prediction of the RSVP revision model is the \emph{entropy reduction hypothesis}:
+
+\begin{equation}
+  S(d_T) < S(d_0).
+  \label{eq:entropy-reduction}
+\end{equation}
+
+That is, revision drives creative artifacts from higher toward lower entropy, as ambiguity is resolved, redundancy is removed, and structural clarity is achieved.
+
+\subsection{Augmented Latent State}
+
+The full RSVP-augmented latent representation of a draft is
+
+\begin{equation}
+  x_t = (z_t,\, \Phi_t,\, \mathbf{v}_t,\, S_t),
+  \label{eq:augmented-state}
+\end{equation}
+
+where $z_t \in \Lat$ is the standard latent embedding, and $(\Phi_t, \mathbf{v}_t, S_t)$ are the patch-level RSVP field summaries aggregated over the full draft. Revision dynamics in the augmented state space are governed by
+
+\begin{equation}
+  dx_t = \Ftheta(x_t, t)\, dt + \Gtheta(x_t, t)\, d\bW_t,
+  \label{eq:augmented-sde}
+\end{equation}
+
+where $\Ftheta$ and $\Gtheta$ are learned drift and diffusion matrices over the joint space. The RSVP augmentation allows the model to distinguish revisions that increase semantic density from those that merely rearrange structure, and to enforce the entropy reduction hypothesis as a training-time regularization constraint.
+
+% ---------------------------------------------------------------
+\section{Draft-Net for Textual Revision}
+% ---------------------------------------------------------------
+
+\subsection{Dataset Construction}
+
+Training Draft-Net on text revision requires corpora in which artifacts appear in multiple successive versions. Three primary sources provide this structure.
+
+Git commit histories from software and writing repositories supply ordered sequences of file states at each commit. Each commit hash corresponds to a draft $d_t$, and the full history of a file constitutes a trajectory $D = (d_0, \dots, d_T)$. LaTeX manuscript revision histories---recoverable from academic writing projects with version control---provide trajectories with strong semantic structure, as each revision step typically corresponds to a meaningful editorial decision. Wikipedia revision logs offer a large-scale, publicly available source of natural-language revision sequences with explicit edit annotations.
+
+Each source yields an extraction pipeline with the following structure: enumerate revision events, decode the artifact at each event into a token sequence, compute the encoder representation $z_t = \enc(d_t)$, and store the ordered trajectory together with optional RSVP field summaries.
+
+\subsection{Edit Operators}
+
+The transformation operator $\Delta_t$ between consecutive text drafts decomposes into four primitive operations:
+
+\begin{align}
+  \mathrm{Insert}(d_t, i, w) &= d_t \cup \{w \text{ at position } i\}, \\
+  \mathrm{Delete}(d_t, i) &= d_t \setminus \{w_i\}, \\
+  \mathrm{Substitute}(d_t, i, w) &= d_t \text{ with } w_i \mapsto w, \\
+  \mathrm{Move}(d_t, i, j) &= d_t \text{ with position } i \text{ relocated to } j.
+\end{align}
+
+These operators form the basis of structured diff representations used in training. The model is trained not only to predict the next state but to predict the sequence of operations responsible for the transition.
+
+\subsection{Semantic Compression}
+
+Analysis of natural revision histories reveals several recurring patterns. Redundancy removal reduces sentence count while preserving information content, decreasing entropy and increasing local scalar density. Argument restructuring moves passages without altering their wording, altering the directional vector field without changing scalar density. Stylistic refinement substitutes tokens with semantically adjacent but rhetorically superior alternatives, producing small perturbations in latent space with measurable increases in scalar density.
+
+Each of these patterns corresponds to a characteristic signature in the $(\Phi, \mathbf{v}, S)$ field space, providing the RSVP augmentation with empirically grounded interpretive content.
+
+\subsection{Training Objective}
+
+The full training loss for the text domain combines the bridge reconstruction loss, the velocity loss, and an optional RSVP field alignment term:
+
+\begin{equation}
+  \mathcal{L}
+  =
+  \lambda_1 \mathcal{L}_{\mathrm{bridge}}
+  +
+  \lambda_2 \mathcal{L}_{\mathrm{vel}}
+  +
+  \lambda_3 \mathcal{L}_{\mathrm{field}},
+  \label{eq:combined-loss}
+\end{equation}
+
+where $\lambda_1, \lambda_2, \lambda_3 \geq 0$ are hyperparameters controlling the relative contribution of each objective.
+
+% ---------------------------------------------------------------
+\section{Draft-Net for Vision: Spectral Painting Trajectories}
+% ---------------------------------------------------------------
+
+\subsection{Painting as a Frequency Evolution}
+
+Painting evolves through a predictable hierarchy of spatial frequencies. Painters trained in the classical atelier method first establish large compositional masses---the low-frequency structure of the image---before introducing medium-scale forms, and finally adding high-frequency edges, texture, and highlights. This hierarchy is not merely conventional; it reflects the logic of visual construction, in which global relationships must be established before local details can be correctly placed.
+
+Draft-Net formalizes this intuition through Fourier analysis of painting progress images. Let $I_t(x,y)$ denote the painting at stage $t$, defined over a canvas domain.
+
+\subsection{Fourier Representation and Spectral Energy}
+
+\begin{definition}[Fourier Transform of a Painting]
+  The spatial Fourier transform of $I_t$ is
+  \begin{equation}
+    \hat{I}_t(u,v) = \int\!\!\int I_t(x,y)\, e^{-2\pi i(ux+vy)}\, dx\, dy,
+  \end{equation}
+  where $(u,v)$ are spatial frequencies and $(\hat{u},\hat{v})$ are the corresponding spectral coefficients.
+\end{definition}
+
+Let $B_k(u,v)$ denote a band-pass filter selecting frequencies in the $k$-th spatial frequency band. The \emph{spectral energy} of the painting in band $k$ at stage $t$ is
+
+\begin{equation}
+  E_k(t) = \int\!\!\int \bigl|\hat{I}_t(u,v)\bigr|^2 B_k(u,v)\, du\, dv.
+  \label{eq:spectral-energy}
+\end{equation}
+
+Low-$k$ bands capture large color masses and compositional structure; high-$k$ bands capture fine edges, texture, and specular highlights.
+
+\subsection{Logistic Growth Model for Spectral Energy}
+
+Empirically, the spectral energy of each band tends to follow a logistic growth curve over the painting trajectory:
+
+\begin{equation}
+  E_k(t) = \frac{A_k}{1 + e^{-a_k(t - t_k)}},
+  \label{eq:logistic-growth}
+\end{equation}
+
+where $A_k$ is the asymptotic energy of band $k$, $a_k$ is the growth rate, and $t_k$ is the inflection time at which that frequency band becomes active. The ordering constraint $t_1 < t_2 < \cdots < t_K$ encodes the fundamental principle that low-frequency structure precedes high-frequency detail.
+
+A spectral training loss enforces consistency between predicted and observed frequency evolution:
+
+\begin{equation}
+  \mathcal{L}_{\mathrm{spec}}
+  =
+  \sum_{k=1}^{K}
+  \sum_{t=1}^{T-1}
+  \bigl(\hat{E}_k(t) - E_k(t)\bigr)^2.
+  \label{eq:spectral-loss}
+\end{equation}
+
+\subsection{Laplacian Pyramid Decomposition}
+
+An alternative and practically convenient decomposition is the Laplacian pyramid. Define the low-pass approximation at level $0$ as
+
+\begin{equation}
+  L_0 = \mathrm{LowPass}(I),
+\end{equation}
+
+and the detail layers recursively as
+
+\begin{equation}
+  L_{k+1} = I_k - \mathrm{Upsample}(L_k).
+\end{equation}
+
+The full image decomposes as
+
+\begin{equation}
+  I = L_0 + L_1 + \cdots + L_K,
+\end{equation}
+
+where $L_0$ contains the coarsest color mass and $L_K$ contains the finest detail. The painting evolution can then be parameterized as
+
+\begin{equation}
+  I_t = \sum_{k=0}^{K} \alpha_k(t)\, L_k,
+  \label{eq:pyramid-decomp}
+\end{equation}
+
+where the temporal coefficients $\alpha_k(t)$ satisfy the ordering constraint
+
+\begin{equation}
+  \frac{d}{dt} \alpha_k(t) \geq 0 \quad \text{and} \quad t_0 < t_1 < \cdots < t_K.
+\end{equation}
+
+This enforces the principle that coarser layers are established before finer layers are introduced.
+
+\subsection{Scale-Aware Training Loss}
+
+During training, larger spatial scales should be weighted more heavily in early stages and smaller scales in later stages. A scale-aware loss accomplishes this:
+
+\begin{equation}
+  \mathcal{L}_{\mathrm{scale}}
+  =
+  \sum_{t=1}^{T-1}
+  \sum_{k=0}^{K}
+  w_k(t)
+  \norm{S_k(\hat{I}_t) - S_k(I_t)}^2,
+  \label{eq:scale-loss}
+\end{equation}
+
+where $S_k(\cdot)$ is the scale-$k$ component of the image and the temporal weights satisfy $w_k(t) \propto e^{-k \cdot t/T}$, ensuring that coarse scales dominate early training.
+
+% ---------------------------------------------------------------
+\section{Object-Layered Composition Dynamics}
+% ---------------------------------------------------------------
+
+\subsection{Foreground-Background Segmentation}
+
+In figurative painting, the canvas is naturally partitioned into background regions---atmospheric gradients, architectural elements, landscape---and foreground objects, which typically resolve later in the painting process. Draft-Net formalizes this partition through a segmentation mask.
+
+\begin{definition}[Segmentation Field]
+  Let $M(x,y) \in [0,1]$ be a continuous \emph{foreground mask}, where $M(x,y) \approx 1$ indicates a foreground region and $M(x,y) \approx 0$ indicates background. The image decomposes as
+  \begin{equation}
+    I(x,y) = (1-M(x,y))\, I_{\mathrm{bg}}(x,y) + M(x,y)\, I_{\mathrm{fg}}(x,y).
+    \label{eq:image-decomp}
+  \end{equation}
+\end{definition}
+
+\subsection{Blurred Foreground Initialization}
+
+At early painting stages, the foreground regions contain only approximate color and luminance information---swatches that preserve low-frequency form while carrying no fine structural detail. This is represented by replacing the foreground with a Gaussian-blurred version:
+
+\begin{equation}
+  I^{(\mathrm{early})} = (1-M)\, I_{\mathrm{bg}} + M\, G_{\sigma}(I),
+  \label{eq:early-image}
+\end{equation}
+
+where $G_{\sigma}$ is Gaussian blur with scale parameter $\sigma$. The blurred foreground carries approximate hue and value without edges or fine texture, allowing background gradients to extend continuously across figure boundaries---an important property for preserving atmospheric perspective and spatial coherence.
+
+\subsection{Temporal Blur Schedule}
+
+As the trajectory progresses, the blur radius decays exponentially:
+
+\begin{equation}
+  \sigma(t) = \sigma_0\, e^{-\lambda t},
+  \label{eq:blur-schedule}
+\end{equation}
+
+so that foreground forms gradually resolve from color masses into structured objects. The foreground influence weight grows according to a logistic schedule:
+
+\begin{equation}
+  w_{\mathrm{fg}}(t) = \frac{1}{1 + e^{-a(t - t_0)}},
+  \label{eq:fg-weight}
+\end{equation}
+
+with $t_0$ denoting the inflection time at which figure resolution begins in earnest.
+
+\subsection{Compositional Update Rule}
+
+At each trajectory step the painting update is partitioned between background and foreground contributions:
+
+\begin{equation}
+  \Delta I_t
+  =
+  (1 - M)\, \Delta I_{\mathrm{bg}}
+  +
+  w_{\mathrm{fg}}(t)\, M\, \Delta I_{\mathrm{fg}}.
+  \label{eq:update-rule}
+\end{equation}
+
+Early in the trajectory, $w_{\mathrm{fg}}(t) \approx 0$ and background development dominates. Late in the trajectory, $w_{\mathrm{fg}}(t) \approx 1$ and foreground refinement dominates.
+
+\subsection{Highlight Injection}
+
+In the final stages, high-frequency edge and highlight information is added selectively. Let $H(I)$ denote a high-frequency sharpening operator, such as a Laplacian edge detector applied to the luminance channel. The highlight injection rule is
+
+\begin{equation}
+  I_{t+1} = I_t + w_h(t)\, H(I_t),
+  \label{eq:highlight}
+\end{equation}
+
+where $w_h(t)$ is small during early and mid stages and increases steeply near $t = T$. Together equations \eqref{eq:update-rule} and \eqref{eq:highlight} produce a structured six-stage painting protocol: low-frequency background establishment, blurred foreground placement, background gradient extension across figure regions, foreground form resolution, mid-frequency structural detail, and final edge and highlight integration.
+
+% ---------------------------------------------------------------
+\section{Reverse Trajectory Planning}
+% ---------------------------------------------------------------
+
+\subsection{Inverting the Velocity Field}
+
+The learned velocity field $\vtheta(z_t, t)$ can be integrated backward in time to reconstruct a plausible history of a finished artifact. Given the terminal state $z_T$, the backward recursion is
+
+\begin{equation}
+  z_{t-1} = z_t - \vtheta(z_t, t)\, \Delta t.
+  \label{eq:backward-integration}
+\end{equation}
+
+Applied iteratively from $t=T$ to $t=0$, this produces a reverse trajectory
+
+\begin{equation}
+  z_T \to z_{T-1} \to z_{T-2} \to \cdots \to z_0
+\end{equation}
+
+approximating the construction history of the finished work. In the painting domain this corresponds to progressively stripping away high-frequency layers, mid-frequency structure, and finally the compositional blocking, until only the blank canvas remains. The reversed sequence approximates a plausible painting workflow in reverse.
+
+\subsection{Applications}
+
+Reverse trajectory planning has several natural applications across creative domains. In painting pedagogy, the reverse trajectory reveals the likely order of operations used by an artist, which can be reconstructed and presented as a step-by-step instructional sequence. In manuscript analysis, the backward integration exposes the structural skeleton underlying a finished essay---the argumentative primitives from which the finished prose was elaborated. In code analysis, reverse trajectory estimation can identify the abstract architectural decisions from which a complex implementation was progressively derived.
+
+% ---------------------------------------------------------------
+\section{Performance Evaluation: Path-Fidelity Metrics}
+% ---------------------------------------------------------------
+
+\subsection{Inadequacy of Perplexity}
+
+Standard language model evaluation uses perplexity, which measures how well the model assigns probability to held-out token sequences from the terminal distribution. Perplexity is orthogonal to trajectory fidelity: a model that memorizes the distribution of finished artifacts may have very low perplexity while being entirely unable to predict the intermediate states of revision. For Draft-Net the relevant question is not whether the model can produce plausible final artifacts, but whether its predicted trajectories match the structure of real authorial histories.
+
+\subsection{Path Error}
+
+The primary scalar evaluation metric is the \emph{Path Error}:
+
+\begin{equation}
+  \mathrm{PE}(\hat\traj, \traj)
+  =
+  \sum_{t=1}^{T-1}
+  \norm{\hat{z}_t - z_t}^2,
+  \label{eq:path-error}
+\end{equation}
+
+measuring the cumulative squared latent distance between the predicted trajectory $\hat\traj$ and the true trajectory $\traj$. A model with low Path Error produces intermediate latent states that closely follow the actual revision history.
+
+\subsection{Edit Path Distance}
+
+The \emph{Edit Path Distance} provides a complementary evaluation in artifact space rather than latent space:
+
+\begin{equation}
+  \mathrm{EPD}(\hat\traj, \traj)
+  =
+  \sum_{t=1}^{T-1}
+  \mathrm{EditDist}(\hat{d}_t, d_t),
+  \label{eq:epd}
+\end{equation}
+
+where $\mathrm{EditDist}$ is a token-level or syntax-aware string edit distance. The Edit Path Distance evaluates fidelity at the level of the artifact rather than its embedding, and is robust to encoder-specific distortions.
+
+\subsection{RSVP Field Alignment}
+
+A third metric evaluates how well the predicted trajectory reproduces the RSVP field dynamics of the real revision history:
+
+\begin{equation}
+  \mathrm{FieldErr}(\hat\traj, \traj)
+  =
+  \sum_{t=1}^{T-1}
+  \Bigl(
+  |\hat\Phi_t - \Phi_t|
+  + \norm{\hat{\mathbf{v}}_t - \mathbf{v}_t}
+  + |\hat{S}_t - S_t|
+  \Bigr).
+  \label{eq:field-error}
+\end{equation}
+
+This metric rewards trajectories that follow the correct semantic density progression, directional flow coherence, and entropy reduction profile---not merely trajectories that happen to land near the correct intermediate latent states.
+
+\subsection{Combined Selection Score}
+
+Model selection uses a weighted combination:
+
+\begin{equation}
+  \mathrm{Score}(\theta)
+  =
+  \lambda_1\, \mathrm{PE}
+  +
+  \lambda_2\, \mathrm{EPD}
+  +
+  \lambda_3\, \mathrm{FieldErr},
+  \label{eq:combined-score}
+\end{equation}
+
+where $\lambda_1, \lambda_2, \lambda_3 \geq 0$ are set according to the application domain. The model achieving the minimum combined score is selected as the best reconstruction of real authorial behavior.
+
+% ---------------------------------------------------------------
+\section{Implementation and Data Pipelines}
+% ---------------------------------------------------------------
+
+\subsection{Git-to-Manifold Extraction}
+
+The primary text-domain data pipeline operates on Git repositories. For each repository, the extraction procedure enumerates commits in chronological order, checks out the file at each commit, decodes the token sequence, computes the encoder representation $z_t = \enc(d_t)$, computes optional RSVP field summaries $(\Phi_t, \mathbf{v}_t, S_t)$, and stores the ordered trajectory. Trajectories with fewer than three commits or with non-meaningful changes between consecutive commits are filtered. The result is a corpus of trajectory tuples $(z_0, z_1, \dots, z_T)$ aligned with their artifact-level edit sequences.
+
+\subsection{Image Progress Dataset}
+
+The vision-domain pipeline requires paintings with layered progress documentation. Sources include digital painting files with individually preserved layer states, time-lapse photography of physical paintings, and online painting progress posts from art communities. For each painting, the progress images are encoded into latent representations, Fourier spectral energies $E_k(t)$ are computed for each band, and segmentation masks are estimated using a pretrained foreground detector. The trajectory is stored as $(z_0, z_1, \dots, z_T)$ with associated spectral energy profiles.
+
+\subsection{Model Architecture}
+
+The Draft-Net architecture consists of three core components. A \emph{trajectory encoder} maps artifact sequences into latent space, parameterizing the encoder $\enc: \D \to \Lat$. A \emph{bridge predictor} accepts pairs $(z_0, z_T)$ and a fractional time index $t \in [0,1]$ and outputs predicted intermediate states $\hat{z}_t$. A \emph{velocity estimator} accepts the current state $z_t$, the terminal state $z_T$, and time $t$, and outputs the predicted revision direction $\hat{v}_t$. These components are trained jointly under the combined loss of equation~\eqref{eq:combined-loss}.
+
+% ---------------------------------------------------------------
+\section{Discussion}
+% ---------------------------------------------------------------
+
+\subsection{Relation to Diffusion Models}
+
+Standard image diffusion models define a forward process that progressively corrupts a clean image toward Gaussian noise, then train a reverse process to denoise. The reverse process is conditioned only on the current noisy state, not on a target artifact. Draft-Net differs in two important respects. First, the corruption direction in Draft-Net is semantically meaningful---moving from polished to rough corresponds to actual revision dynamics rather than arbitrary noise injection. Second, the model conditions on both endpoints, learning a bridge rather than a free denoising process. This changes the mathematical structure from a Markov chain conditioned on a single endpoint to a stochastic process conditioned on two fixed marginals.
+
+\subsection{Relation to Autoregressive Language Models}
+
+Autoregressive models generate tokens left-to-right, conditioning each prediction on its full prior context. Draft-Net generates revision states forward in time, conditioning each intermediate state on both the initial draft and the terminal artifact. The key structural difference is the availability of the endpoint: autoregressive models must generate into an unknown future, while Draft-Net navigates a known destination. This transforms generation from an open-ended extrapolation into a constrained interpolation, which significantly reduces the problem's effective complexity while introducing its own challenges around endpoint specification.
+
+\subsection{Relation to Optimal Transport}
+
+The bridge formulation of Draft-Net connects directly to the theory of optimal transport. The initial draft $d_0$ and the final draft $d_T$ define two point masses in artifact space; under empirical distribution, the training corpus defines two distributions $\mu_0$ and $\mu_T$ over initial and final states. The revision process is then a stochastic transport plan between $\mu_0$ and $\mu_T$. The Schrödinger bridge problem identifies the transport plan with minimum relative entropy, and the empirical trajectories in the training corpus serve as noisy observations of this optimal plan. Draft-Net can therefore be viewed as a parametric estimator of the Schrödinger bridge between the initial and final draft distributions.
+
+% ---------------------------------------------------------------
+\section{Future Directions}
+% ---------------------------------------------------------------
+
+Several extensions of the framework are under investigation. Real-time collaborative revision systems could track the joint trajectory of multiple authors, learning how their individual editing fields interact and converge. Cross-domain trajectory transfer---learning how the spectral hierarchy of painting can inform structural refinement in writing---would test whether revision dynamics share universal geometric properties across creative modalities. Revision-style modeling would train separate velocity fields for different authors or editor profiles, enabling the model to emulate specific editorial voices rather than average revision behavior. Integration with reinforcement learning would allow the trajectory framework to be extended toward active editing assistance, where the model learns not just to predict revisions but to suggest them under a user-defined reward signal.
+
+% ---------------------------------------------------------------
+\section{Conclusion}
+% ---------------------------------------------------------------
+
+This paper has introduced Draft-Net, a trajectory-learning framework that reframes generative modeling as process learning rather than endpoint generation. The central shift is from modeling the distribution of finished artifacts to modeling the latent geometry of creative revision. By training on version-controlled empirical histories, Draft-Net learns the vector fields that govern how documents and images move through their respective latent manifolds during authorial refinement.
+
+The mathematical core of the framework comprises a stochastic differential equation model of revision dynamics, an endpoint-conditioned bridge formulation of intermediate state prediction, a dyadic iterative resolution curriculum for progressive trajectory learning, and RSVP field augmentation for interpretable diagnostic representation. The spectral extension to the visual domain formalizes centuries of painting practice in terms of Fourier frequency evolution and Laplacian pyramid decomposition. The object-layered composition model captures the classical principle that background structure precedes foreground resolution. And the path-fidelity evaluation metrics provide a rigorous framework for selecting models by how faithfully they reconstruct real authorial histories rather than how fluently they produce plausible terminal states.
+
+Taken together, these contributions define a geometry of creation: not the probability of what exists, but the dynamics of how things come to be. Draft-Net learns the temporal logic of human creative work---the structured sequence of transformations through which ideas, images, and programs evolve from rough beginnings into finished forms.
+
+% ---------------------------------------------------------------
+\appendix
+\section{Notation Summary}
+% ---------------------------------------------------------------
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\D$ & Space of creative artifacts \\
+$D = (d_0, \dots, d_T)$ & Draft sequence \\
+$z_t = \enc(d_t)$ & Latent embedding of draft $t$ \\
+$\traj(t)$ & Continuous trajectory in latent space \\
+$\dz_t$ & Discrete revision velocity \\
+$\vtheta(z,t)$ & Learned drift vector field \\
+$\sigma(t)$ & Exploration noise coefficient \\
+$\bW_t$ & Wiener process \\
+$\ptheta(z_t \mid z_0, z_T, t)$ & Revision bridge distribution \\
+$\Phi_t$ & Scalar density (RSVP) \\
+$\mathbf{v}_t$ & Directional vector flow (RSVP) \\
+$S_t$ & Informational entropy (RSVP) \\
+$x_t = (z_t, \Phi_t, \mathbf{v}_t, S_t)$ & Augmented latent state \\
+$E_k(t)$ & Spectral energy in band $k$ at stage $t$ \\
+$M(x,y)$ & Foreground segmentation mask \\
+$G_\sigma$ & Gaussian blur with scale $\sigma$ \\
+$\sigma(t) = \sigma_0 e^{-\lambda t}$ & Temporal blur decay schedule \\
+$w_{\mathrm{fg}}(t)$ & Foreground influence weight \\
+$\mathrm{PE}$ & Path Error \\
+$\mathrm{EPD}$ & Edit Path Distance \\
+$\mathrm{FieldErr}$ & RSVP field alignment error \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}
